@@ -43,7 +43,7 @@ Ok very interesting! Well let's talk state.
 <!--
 First a bit about me - I make Legend, a local-first productivity app that combines documents, calendars, and a built in browser.
 
-Some users have millions of items that need to be filtered and sorted as you type, so performance and sync are critical.
+Some users have millions of items that need to be filtered and sorted as they type, so performance and sync are critical.
 -->
 
 ---
@@ -61,7 +61,7 @@ Some users have millions of items that need to be filtered and sorted as you typ
 <!--
 I'm also working on Bravely, a platform for mental health therapists to run their practice and collaborate with their clients.
 
-Healthcare data has intense security and privacy requirements, plus it needs to work reliably in poor network conditions. So local-first is essential.
+Healthcare data has intense security and privacy requirements, plus it needs to work reliably in poor network conditions. We do not want to ever lose any data. So doing local-first well is essential for us.
 -->
 
 ---
@@ -69,11 +69,13 @@ Healthcare data has intense security and privacy requirements, plus it needs to 
 # Sync engine architecture
 
 1. Local app state
-2. Server app state
+2. Server data
 3. Sync engine coordinating local <-> remote
 
 <!--
 Building local-first apps usually means managing three things: your app state, the data from the server, and then a whole sync engine on top.
+
+Sometimes that sync engine is another server in itself, sometimes it's bunch of client side logic.
 
 But what if your state management could handle the sync for you?
 -->
@@ -85,7 +87,7 @@ But what if your state management could handle the sync for you?
 1. State that syncs itself
 
 <!--
-That's what Legend State does. Let me show you how.
+That's what Legend State does. Let's talk about how that works.
 -->
 
 ---
@@ -110,9 +112,9 @@ const theme$ = observable('dark')
 ```
 
 <!--
-Legend State uses observables. Some call this concept signals. I think of observables as signals with hierarchy.
+The core primitive is the observable. Some call this concept signals. I think of them as signals with hierarchy.
 
-You can create observables from any data structure - objects, arrays, primitives. The $ suffix is just a convention to indicate it's an observable.
+You can create observables from any data structure - objects, arrays, primitives. We use a $ suffix just as a convention to indicate it's an observable.
 -->
 
 ---
@@ -163,7 +165,7 @@ const theme$ = settings$.theme // Proxy
 ```
 
 <!--
-As you dot through an object it creates a Proxy for each child dynamically. It doesn't modify the data at all - an observable is a Proxy that wraps the raw data with functions for change tracking.
+As you dot through an object it creates a Proxy for each child dynamically. It doesn't modify the data at all - it's is a Proxy wrapper that adds functions to enable change tracking.
 -->
 
 ---
@@ -171,24 +173,24 @@ As you dot through an object it creates a Proxy for each child dynamically. It d
 ## Fine-Grained Reactivity
 
 ```tsx
-import { observable } from '@legendapp/state'
-import { useSelector } from '@legendapp/state/react'
-
 const user$ = observable({
-    name: 'Jay',
-    email: 'jay@legendapp.com'
+    profile: {
+        name: 'Jay',
+        email: 'jay@legendapp.com'
+    }
 })
 
 function Profile() {
     // useSelector tracks this value and re-renders when it changes
-    const name = useSelector(user$.name)
+    const name = useSelector(user$.profile.name)
+    const name2 = useSelector(() => user$.profile.name.get())
 
     return (
         <div>
             <h1>Hello {name}</h1>
             <input
                 value={name}
-                onChange={e => user$.name.set(e.target.value)}
+                onChange={e => user$.profile.name.set(e.target.value)}
             />
         </div>
     )
@@ -196,11 +198,11 @@ function Profile() {
 ```
 
 <!--
-In React, useSelector tracks the observable and automatically re-renders when it changes.
+In React, we have a useSelector hook which tracks the observable and automatically re-renders when it changes.
 
 This is a key difference from useState or other state libraries. Each useSelector call tracks only the specific data it accesses.
 
-So when email changes, components only using user.name won't re-render. This granular tracking is great for performance.
+So when email changes, components using user.name won't re-render. This granular tracking is great for performance.
 -->
 
 ---
@@ -228,7 +230,7 @@ function Profile() {
 ```
 
 <!--
-But even better for performance is for the component to not re-render at all. We can use this Memo component to make a tiny element that re-renders itself whenever name changes. And we can two-way bind this input directly to the the observable, so we don't have to re-render the whole component when the input changes.
+But even better for performance is for the component to not re-render at all. We can use this Memo component to make a tiny element that re-renders itself whenever name changes. And we can two-way bind an input directly to the the observable, so we don't have to re-render the whole outer component while typing.
 -->
 
 ---
@@ -272,7 +274,7 @@ const name = state$.name.get()
 ```
 
 <!--
-Because an observable node is a Proxy that doesn't touch the raw data, it could actually point to anything. A child could just be data in an object.
+Because an observable node is a Proxy that doesn't touch the raw data, it could actually point to anything. A child could just be a child in an object.
 
 But it can also be a function that lazily computes a value when accessed. So we can make computed observables with just a function.
 -->
@@ -298,9 +300,9 @@ store$.userNames["id1"].set("Hello")
 <!--
 Or we could just create a totally new object. We can make a lookup table that takes a key and points into a different observable.
 
-Then that child is two-way bound into the users$ object.
+Then that child is two-way bound into another observable.
 
-This works well because computeds are lazy. So it creates new virtual proxies for each child dynamically as we access them. And that laziness allows something interesting...
+This works well because computeds are lazy. So it creates new proxies for each child dynamically as we access them. And that laziness allows something interesting...
 -->
 
 ---
@@ -373,11 +375,11 @@ function Messages() {
 ````
 
 <!--
-An observable could point at the result of a Promise. Since it's lazy, it doesn't do anything until you get() it, which triggers the fetch and updates itself when it resolves.
+An observable could point a Promise. Since it's lazy, it doesn't do anything until you get() it, which triggers the fetch and updates itself in place when it resolves.
 
-1. So then if we use that observable in a component, it will just re-render itself itself when data comes in. And then our component is bound to the server data, which is cool.
+1. So then if we use that observable in a component, it will just re-render itself itself when the fetch comples. And then our component is bound to the server data.
 
-2. But fetching is more complicated than that, so we can make a sync plugin to wrap the complexity.
+2. But fetching is more complicated than that, so we have a little fetch plugin to wrap some complexity.
 
 3. And that plugin can track its changes, to send them back to a server and do a two-way sync. So now we have an observable that is purely defined by server data, and is actually two-way bound to the server.
 -->
@@ -408,7 +410,7 @@ user$.profile.name.set('John')
 <!--
 And that's where it gets interesting for local-first apps. Legend State doesn't just know that something changed - it knows exactly what changed, where, and how.
 
-Every change includes the exact path that changed, the new value, and the previous value.
+Every change includes the path in the object, the new value, and the previous value. So we can understand user intent because know exactly what fields changed.
 
 This granular change tracking is what makes Legend State perfect for a sync engine, because we can cache the changes metadata, and we can use it for determining what to sync.
 -->
@@ -433,7 +435,7 @@ const profile$ = observable(
 <!--
 So with all of that information we can build a simple sync engine. We have a synced helper which encapsulates persistence and sync logic.
 
-So we can get the profile from the server, and send it back to the server when we modify it locally. It persists to local storage so on refresh it will use the cached local data immediately. This is all we need for a local first sync engine.
+So we can get the profile from the server, and send it back to the server when we modify it locally. It persists to local storage so it loads instantly with the cached data.
 -->
 
 ---
@@ -507,16 +509,44 @@ messages$['messageId'].set({
     text: 'Hello',
 })
 ```
+```ts {3}
+const messages$ = observable(
+    syncedCrud({
+        list: ({ lastSync }) => server.listAllMessages({ after: lastSync }),
+        create: ({ value }) => server.createMessage(value),
+        update: ({ value }) => server.updateMessage(value.id, value),
+        delete: ({ value }) => server.deleteMessage(value.id),
+        persist: {
+            plugin: ObservablePersistLocalStorage,
+            name: 'messages',
+            // Cache pending changes to retry after reload
+            retrySync: true,
+        },
+        // Retry sync indefinitely until it succeeds
+        retry: { infinite: true, backoff: 'exponential' },
+        // Sync partial with only what's changed since last sync
+        changesSince: 'last-sync',
+        // Field to use for updated timestamps
+        fieldUpdatedAt: 'updated_at'
+    }),
+)
+
+messages$['messageId'].set({
+    id: 'messageId',
+    sender: 'Annyong',
+    text: 'Hello',
+})
+```
 ````
 
 <!--
 One way to make a sync engine could be to send that changes array to the server, and let it figure out how to apply it to the database.
 
-2. Or we have a syncedCrud plugin which handles all of the crud logic. Just give it your server's crud functions. And the plugin internally figures out which rows were created, updated, or deleted, and produces a diff to send to the server. So if you update the text of a message, it will send a partial update of only the text.
+2. Or we have a syncedCrud plugin which for crud backends. Just give it your server's crud functions. And the plugin internally figures out which rows were created, updated, or deleted, and produces a diff to send to the server. So if you update the text of a message, it can send a partial update of only the text.
 
-3. And with a few more options we can set up a whole local-first sync engine. It caches all pending changes until they sync successfully, so even after restarting the app it keeps retrying.
+3. And with a few more options we can set up a whole local-first sync engine. It caches all changes and retries them until they succeed. So you can use your app fully offline and know it will sync eventually.n.
 
-It keeps track of the updated timestamps to get only the rows that changed since the last sync, which is a huge bandwidth and processing time saver.
+4. And using the updatedAt timestamps it can get only the rows that changed since the last sync, which is a huge bandwidth and processing time saver.
 -->
 
 
@@ -538,9 +568,19 @@ pending = {
 ```
 
 <!--
-The key to making all this work is that we know what fields are changing, so the sync engine can cache the pending changes.
+The key to making retrying work is that we know what fields are changing, so the sync engine can cache the pending changes until they save successfully.
+-->
 
-We keep track of data pending save until it's successful. So when we restart and come back online, we first receive the latest data from the server, then re-apply any pending changes on top of the newly synced data and if it's still changed it will keep trying to send the update.
+---
+
+## Pending changes
+
+1. Receive remote data
+2. Apply changes on top
+3. Anything still modified will sync
+
+<!--
+So when we restart the app and come back online, we first receive the latest data from the server, then re-apply any pending changes on top of the newly synced data and if it's still changed it will keep trying to send the update.
 -->
 
 ---
@@ -607,9 +647,9 @@ const app$ = observable({
 ```
 
 <!--
-And since all of your synced data is in observables, you get all the nice properties of observables like easy computed values
+And since all of your synced data is in observables, you get all of their nice properties like easy computed values
 
-These automatically update when the underlying data changes, whether from local updates or incoming sync changes.
+These automatically update when the underlying data changes, whether from local updates or incoming sync.
 -->
 
 ---
@@ -636,7 +676,7 @@ const { isPersistLoaded,
 ```
 
 <!--
-If you want to dsplay loading states or handle errors in the frontend we have a syncState helper to get that those details.
+If you want to dsplay loading states or handle errors in the frontend we have a syncState helper to get those details.
 -->
 
 ---
@@ -666,7 +706,7 @@ const messages$ = observable(
 ```
 
 <!--
-To do local first well you really want to have realtime updates. So syncedCrud has a subscribe parameter to setup a realtime listener or just poll for changes.
+To do local first well you really want to have realtime updates. So the sync plugins have a subscribe parameter to setup a realtime listener or just poll for changes.
 -->
 
 ---
@@ -744,7 +784,6 @@ syncObservable(todos$, {
 })
 ```
 ```tsx
-// Add persistence
 const todos$ = observable([
     { id: 1, text: 'Learn Legend State', done: false }
 ])
@@ -762,7 +801,6 @@ syncObservable(todos$, syncedSupabase({
 }))
 ```
 ```tsx
-// Change your backend
 const todos$ = observable([
     { id: 1, text: 'Learn Legend State', done: false }
 ])
@@ -782,14 +820,102 @@ syncObservable(todos$, syncedCrud({
 ````
 
 <!--
-And since the sync system lives inside the state, your frontend code doesn't need to know anything about it. It just gets and sets observables. So you can prototype with just local state.
+And since the sync system lives inside the state, your frontend code doesn't need to know anything about it. It just gets and sets observables. So you can prototype your UI with just local state.
 
 2. And then add persistence to cache it
 
 3. Then use Supabase for quick and easy syncing
 
-4. Then switch it to another provider or your own custom backend. And your app code doesn't care and never has to change.  I actually have done that myself - I changed from a document store using Firebase to a Postgres SQL backend, and didn't need to change the frontend at all.
+4. Then if you switch to another provider or build your own custom backend, just swap the sync plugin in the state. And your app code doesn't care and never has to change.
 -->
+
+---
+
+# Conclusion
+
+1. Best possible performance
+2. Powerful sync engine
+3. Backend agnostic
+4. Simplest DX
+
+<!--
+So wrapping up this intro, I think Legend State is interesting because it gives you the best possible performance in React, and a very powerful backend-agnostic sync engine with simple DX.
+ -->
+
+---
+
+# <span class="questionBox mr-4">?</span>
+
+<!--
+Any questions before we move on to building some stuff?
+-->
+
+
+---
+
+# Conflict resolution
+
+- Server-side
+- Planning to add client-side options
+
+<!--
+- Assumes client is not fully aware so should if client wanted to write it should send it to the server to figure it out, and possibly reject it
+ -->
+
+---
+
+# Migration
+
+```ts
+const state$ = observable(synced({
+    persist: {
+        ...,
+        transform: {
+            load: (value) => {
+                // Transform cached data into latest format
+                value.newField = value.oldField + 'change'
+                delete value.oldField
+                return value
+            },
+            save: (value) => doMySaveTransform(Value),
+        }
+    },
+    transform: {
+        load: (value) => doMyLoadTransform(Value),
+        save: (value) => doMySaveTransform(Value),
+    }
+}))
+```
+
+---
+
+# Persistence
+
+<div class="flex gap-16 pt-8">
+<div>
+
+### Web
+
+- Local Storage
+- IndexedDB
+
+</div>
+<div>
+
+### React Native
+
+- AsyncStorage
+- mmkv
+- sqlite
+
+</div>
+<div>
+
+### Custom
+- Make your own
+
+</div>
+</div>
 
 ---
 
@@ -808,10 +934,7 @@ function Todos({ todos, sendTodo }) {
     const [optimisticMessages, addOptimisticMessage] = useOptimistic(
         messages,
         (state, newMessage) => [
-            {
-                text: newMessage,
-                sending: true
-            },
+            { text: newMessage, sending: true },
             ...state,
         ]
     )
@@ -916,78 +1039,3 @@ const onClick = () => {
 <!--
 The Legend State version is just a lot easier. All of that logic is handled internally in the sync engine, and you can just work with the state.
 -->
-
----
-
-# Conclusion
-
-1. Best possible performance
-2. Powerful sync engine
-3. Backend agnostic
-4. Simplest DX
-
-<!--
-So wrapping up this intro, I think Legend State is interesting because it gives you the best possible performance in React, and a very powerful backend-agnostic sync engine with simple DX.
- -->
-
----
-
-# <span class="questionBox mr-4">?</span>
-
-<!--
-Any questions before we move on to building some stuff?
--->
-
-
-
-
----
-
-# Conflict resolution
-
-- Server-side
-- Assumes client is not fully aware so should if client wanted to write it should send it to the server to figure it out, and possibly reject it
-- Planning to add client-side options
-
----
-
-# Migration
-
-```ts
-const state$ = observable(synced({
-    persist: {
-        ...,
-        transform: {
-            load: (value) => {
-                // Transform cached data into latest format
-                value.newField = value.oldField + 'change'
-                delete value.oldField
-                return value
-            },
-            save: (value) => doMySaveTransform(Value),
-        }
-    },
-    transform: {
-        load: (value) => doMyLoadTransform(Value),
-        save: (value) => doMySaveTransform(Value),
-    }
-}))
-```
-
----
-
-# Persistence
-
-## Web
-
-- Local Storage
-- IndexedDB
-
-## React Native
-
-- AsyncStorage
-- mmkv
-- sqlite
-
-## Custom
-- Make your own :)
