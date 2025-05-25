@@ -1,23 +1,22 @@
 {
-  "name": "legend-state-devx",
-  "type": "module",
-  "private": true,
-  "scripts": {
-    "build": "slidev build",
-    "run-1": "slidev ./intro.md",
-    "run-2": "slidev ./api.md",
-    "export": "slidev export"
-  },
-  "dependencies": {
-    "@slidev/cli": "^51.8.0",
-    "@slidev/theme-bricks": "^0.25.0",
-    "@slidev/theme-default": "latest",
-    "@slidev/theme-seriph": "latest",
-    "prettier-plugin-slidev": "^1.0.5",
-    "slidev-theme-dracula": "^0.2.0",
-    "vue": "^3.5.14"
-  },
-  "devDependencies": {
-    "playwright-chromium": "^1.52.0"
-  }
+    "name": "legend-state-devx",
+    "type": "module",
+    "private": true,
+    "scripts": {
+        "build": "slidev build",
+        "start": "slidev ./slides.md",
+        "export": "slidev export"
+    },
+    "dependencies": {
+        "@slidev/cli": "^0.49.16",
+        "@slidev/theme-bricks": "^0.25.0",
+        "@slidev/theme-default": "latest",
+        "@slidev/theme-seriph": "latest",
+        "prettier-plugin-slidev": "^1.0.5",
+        "slidev-theme-dracula": "^0.2.0",
+        "vue": "^3.4.31"
+    },
+    "devDependencies": {
+        "playwright-chromium": "^1.52.0"
+    }
 }

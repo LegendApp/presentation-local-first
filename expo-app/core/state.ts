@@ -1,6 +1,6 @@
 import { generateId } from '@/core/generateId';
 import { APIClient, Todo } from '@/core/keelClient';
-import { observable, syncState, when } from '@legendapp/state';
+import { observable, observe, syncState, when } from '@legendapp/state';
 import { observablePersistAsyncStorage } from '@legendapp/state/persist-plugins/async-storage';
 import { configureSynced, synced } from '@legendapp/state/sync';
 import { KeelListParams, syncedKeel } from '@legendapp/state/sync-plugins/keel';
@@ -11,26 +11,15 @@ const pluginAsyncStorage = observablePersistAsyncStorage({
     AsyncStorage,
 });
 
-const getUserFromUrl = () => {
-    if (typeof window?.location !== 'undefined') {
-        const searchParams = new URLSearchParams(window.location.search);
-        const param = searchParams.get('idUser');
-        return param ? { id: searchParams.get('idUser') } : null;
-    }
-    return null;
-};
-
 // Setup user$
 export const user$ = observable<{ id: string }>(
-    () =>
-        getUserFromUrl() ||
-        synced({
-            initial: {},
-            persist: {
-                plugin: pluginAsyncStorage,
-                name: 'user',
-            },
-        }),
+    synced({
+        initial: {},
+        persist: {
+            plugin: pluginAsyncStorage,
+            name: 'user',
+        },
+    }),
 );
 
 // If persist loads without an id, generate one.
@@ -88,3 +77,5 @@ export const store$ = observable({
             Object.values(store$.user[idUser].todos.get()).filter((todo) => !todo.completed).length,
     }),
 });
+
+// AsyncStorage.clear();

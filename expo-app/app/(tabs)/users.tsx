@@ -19,7 +19,7 @@ export default function Users() {
     console.log('7 - Users screen');
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             <ScrollView style={styles.scrollView}>
                 <Text style={styles.heading}>Users</Text>
                 <UsersList />
@@ -33,6 +33,7 @@ const styles = StyleSheet.create({
         flex: 1,
     },
     scrollView: {
+        flex: 1,
         paddingHorizontal: 16,
     },
     heading: {

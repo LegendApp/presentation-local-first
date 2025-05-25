@@ -76,12 +76,12 @@ h3 {
     display: none;
 }
 
-.grid-section.note>.slidev-note {
+.grid-section.note > .slidev-note {
     padding-top: 0.5rem !important;
     font-size: 20px !important;
 }
 
-#slide-container+div {
+#slide-container + div {
     display: none;
 }
 
@@ -92,7 +92,13 @@ h3 {
     padding: 4px 32px;
 }
 
-h1+.slidev-code-wrapper,
-h2+.slidev-code-wrapper {
+h1 + .slidev-code-wrapper,
+h2 + .slidev-code-wrapper {
     margin-top: 32px !important;
+}
+
+pre.shiki {
+    border-radius: 8px !important;
+    background-color: #17181a;
+    border: 1px solid #32343a;
 }
