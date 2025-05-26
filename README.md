@@ -1,4 +1,4 @@
-# React Native London Conf 2024 Workshop: Legend State
+# Local First Conference 2025 Workshop: Legend State
 
 This workshop teaches developers how to build high performance React Native apps using Legend State, starting with basic state management and progressing through advanced patterns.
 
@@ -6,9 +6,9 @@ The workshop then shows how to make the app production-ready with features like 
 
 # How to use this repo
 
-1. Checkout this repo and open the `expo-app` folder. You'll start working on the main branch.
-2. Start at the first lesson by opening up the file in the `lessons` folder starting with 01-.
-3. Do the rest of the modules in order.
+1. Checkout this repo and open the `expo-app` folder.
+2. `bun i`
+3. `bun start`
 
 # Prerequisites
 
