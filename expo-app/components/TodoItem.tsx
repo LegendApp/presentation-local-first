@@ -1,7 +1,8 @@
 import { Todo } from '@/core/keelClient';
 import { Ionicons } from '@expo/vector-icons';
 import { Observable } from '@legendapp/state';
-import { $, reactive } from '@legendapp/state/react';
+import { reactive } from '@legendapp/state/react';
+import { $TextInput, $View } from '@legendapp/state/react-native';
 import { Checkbox } from 'expo-checkbox';
 import { StyleSheet } from 'react-native';
 
@@ -17,16 +18,17 @@ export const TodoItem = ({ todo$ }: { todo$: Observable<Todo> }) => {
     console.log('3 - TodoItem');
 
     return (
-        <$.View $style={() => [styles.todo, todo$.completed.get() && styles.viewDone]}>
-            <$.TextInput
+        <$View $style={() => [styles.todo, todo$.completed.get() && styles.viewDone]}>
+            <$TextInput
                 $style={() => [styles.todoText, todo$.completed.get() && styles.textDone]}
+                // Reactive two-way binding to todo text
                 $value={todo$.text}
                 multiline
                 blurOnSubmit
             />
             <ReactiveCheckbox value={todo$.completed} style={styles.checkbox} />
             <Ionicons name="trash" size={24} color="red" style={styles.deleteButton} onPress={onPressDelete} />
-        </$.View>
+        </$View>
     );
 };
 

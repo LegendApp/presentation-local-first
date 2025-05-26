@@ -36,7 +36,7 @@ const keel = new APIClient({
 
 const { queries, mutations } = keel.api;
 
-// Setup todos$
+// Configure defaults for a sync plugin
 const sync = configureSynced(syncedKeel, {
     client: keel,
     persist: {
@@ -53,6 +53,7 @@ const sync = configureSynced(syncedKeel, {
     changesSince: 'last-sync',
 });
 
+// Setup store$
 export const store$ = observable({
     users: sync({
         list: ({ where: { updatedAt } }) => queries.listUsers({ updatedAt: updatedAt?.after }),
@@ -78,4 +79,5 @@ export const store$ = observable({
     }),
 });
 
+// For debugging:
 // AsyncStorage.clear();

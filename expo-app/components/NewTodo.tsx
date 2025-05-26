@@ -1,6 +1,7 @@
 import { generateId } from '@/core/generateId';
 import { store$ } from '@/core/state';
-import { $, useObservable } from '@legendapp/state/react';
+import { useObservable } from '@legendapp/state/react';
+import { $TextInput } from '@legendapp/state/react-native';
 import { StyleSheet } from 'react-native';
 
 interface NewTodoProps {
@@ -28,7 +29,8 @@ export const NewTodo = ({ idUser }: NewTodoProps) => {
     console.log('4 - NewTodo');
 
     return (
-        <$.TextInput
+        <$TextInput
+            // Reactive two-way binding to local observable
             $value={text$}
             onSubmitEditing={handleSubmitEditing}
             placeholder="What do you want to do?"
