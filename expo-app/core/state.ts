@@ -51,6 +51,12 @@ const sync = configureSynced(syncedKeel, {
     },
     mode: 'merge',
     changesSince: 'last-sync',
+    subscribe: ({ refresh }) => {
+        const interval = setInterval(() => {
+            refresh();
+        }, 5000);
+        return () => clearInterval(interval);
+    },
 });
 
 // Setup store$

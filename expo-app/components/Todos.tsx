@@ -13,6 +13,7 @@ export function Todos({ idUser, isSelf }: TodosProps) {
     return (
         <View>
             <Text style={styles.heading}>Todos$</Text>
+            <Text style={styles.small}>{idUser}</Text>
             {isSelf && <NewTodo idUser={idUser} />}
             <TodoList idUser={idUser} />
         </View>
@@ -23,6 +24,11 @@ const styles = StyleSheet.create({
     heading: {
         fontSize: 24,
         fontWeight: 'bold',
+        textAlign: 'center',
+        paddingTop: 16,
+    },
+    small: {
+        fontSize: 16,
         textAlign: 'center',
         paddingVertical: 16,
     },

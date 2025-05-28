@@ -1,6 +1,6 @@
 import { generateId } from '@/core/generateId';
 import { store$ } from '@/core/state';
-import { useObservable } from '@legendapp/state/react';
+import { useMount, useObservable } from '@legendapp/state/react';
 import { $TextInput } from '@legendapp/state/react-native';
 import { StyleSheet } from 'react-native';
 

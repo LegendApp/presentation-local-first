@@ -77,7 +77,7 @@ Building local-first apps usually means managing three things: your app state, t
 
 Sometimes that sync engine is another server in itself, sometimes it's bunch of client side logic.
 
-But what if your state management could handle the sync for you?
+But what if state could handle the sync for you?
 -->
 
 ---
@@ -112,7 +112,7 @@ const theme$ = observable('dark')
 ```
 
 <!--
-The core primitive is the observable. Some call this concept signals. I think of them as signals with hierarchy.
+The core primitive is the observable. Some call this concept signals with hierarchy, or deep signals.
 
 You can create observables from any data structure - objects, arrays, primitives. We use a $ suffix just as a convention to indicate it's an observable.
 -->
@@ -165,7 +165,7 @@ const theme$ = settings$.theme // Proxy
 ```
 
 <!--
-As you dot through an object it creates a Proxy for each child dynamically. It doesn't modify the data at all - it's is a Proxy wrapper that adds functions to enable change tracking.
+As you dot through an object it creates a Proxy for each child dynamically. It doesn't modify the data at all - it's a Proxy wrapper that adds functions to enable change tracking.
 -->
 
 ---
@@ -250,9 +250,10 @@ In the observable version on the right, it re-renders only the tiniest element t
     <img src="/media/perfchart.png" class="h-[560px]">
 </div>
 
-<!-- This along with a lot of other optimizations is how Legend-State is significantly faster than other React state libraries and even vanilla React.
+<!--
+This along with a lot of other optimizations is how Legend-State is significantly faster than other React state libraries and vanilla React.
 
-But this isn't the performance first conference, so let's focus on how this enables a sync engine.
+But this isn't the performance first conference, this workshop is focused on how this enables a sync engine. But if you want to talk performance let's chat later.
 -->
 
 ---
@@ -300,7 +301,7 @@ store$.userNames["id1"].set("Hello")
 <!--
 Or we could just create a totally new object. We can make a lookup table that takes a key and points into a different observable.
 
-Then that child is two-way bound into another observable.
+That that child is two-way bound into another observable.
 
 This works well because computeds are lazy. So it creates new proxies for each child dynamically as we access them. And that laziness allows something interesting...
 -->
@@ -375,9 +376,9 @@ function Messages() {
 ````
 
 <!--
-An observable could point a Promise. Since it's lazy, it doesn't do anything until you get() it, which triggers the fetch and updates itself in place when it resolves.
+An observable could point a Promise. Since it's lazy, it doesn't do anything until you get() it, which triggers the fetch and returns undefined, then updates itself in place when it resolves.
 
-1. So then if we use that observable in a component, it will just re-render itself itself when the fetch comples. And then our component is bound to the server data.
+1. So then if we use that observable in a component, it will re-render itself itself when the fetch comples. And then our component is bound to the server data.
 
 2. But fetching is more complicated than that, so we have a little fetch plugin to wrap some complexity.
 
@@ -410,7 +411,7 @@ user$.profile.name.set('John')
 <!--
 And that's where it gets interesting for local-first apps. Legend State doesn't just know that something changed - it knows exactly what changed, where, and how.
 
-Every change includes the path in the object, the new value, and the previous value. So we can understand user intent because know exactly what fields changed.
+Every change includes the path in the object, the new value, and the previous value. So we can understand user intent because we know exactly what fields changed.
 
 This granular change tracking is what makes Legend State perfect for a sync engine, because we can cache the changes metadata, and we can use it for determining what to sync.
 -->
@@ -433,7 +434,7 @@ const profile$ = observable(
 ```
 
 <!--
-So with all of that information we can build a simple sync engine. We have a synced helper which encapsulates persistence and sync logic.
+So with all of that information we can build a simple sync engine. We have a synced helper which connects an observable to the sync engine.
 
 So we can get the profile from the server, and send it back to the server when we modify it locally. It persists to local storage so it loads instantly with the cached data.
 -->
@@ -542,7 +543,7 @@ messages$['messageId'].set({
 <!--
 One way to make a sync engine could be to send that changes array to the server, and let it figure out how to apply it to the database.
 
-2. Or we have a syncedCrud plugin which for crud backends. Just give it your server's crud functions. And the plugin internally figures out which rows were created, updated, or deleted, and produces a diff to send to the server. So if you update the text of a message, it can send a partial update of only the text.
+2. Or we have a syncedCrud plugin which for crud backends. Just give it your server's crud functions. And the plugin figures out which rows were created, updated, or deleted, and produces a diff to send to the server. So if you update the text of a message, it can send a partial update of only the text.
 
 3. And with a few more options we can set up a whole local-first sync engine. It caches all changes and retries them until they succeed. So you can use your app fully offline and know it will sync eventually.n.
 
